@@ -13,12 +13,10 @@ class Process:
         self.active = True
         self.is_leader = False
         self.inbox = []
-        self.received_own = {'LEFT': False, 'RIGHT': False}
 
     def send_own_id(self, distance):
         self.left.inbox.append(Message(self.id, 'LEFT', distance))
         self.right.inbox.append(Message(self.id, 'RIGHT', distance))
-        self.received_own = {'LEFT': False, 'RIGHT': False}
 
     def forward(self, msg):
         if msg.direction == 'LEFT':
@@ -36,22 +34,12 @@ class Process:
         else:
             for msg in self.inbox:
                 if msg.mes_id == self.id:
-                    self.received_own[msg.direction] = True
+                    self.is_leader = True
                 elif msg.mes_id > self.id:
                     self.active = False
                     if msg.distance > 0:
                         self.forward(msg)
-                else:
-                    if msg.distance > 0:
-                        self.forward(msg)
-                    
         self.inbox.clear()
-
-    def check_leader(self):
-        if self.active and self.received_own['LEFT'] and self.received_own['RIGHT']:
-            self.is_leader = True
-            return True
-        return False
 
 
 class HS:
@@ -80,17 +68,9 @@ class HS:
                     p.receive()
                 
                 for p in self.processes:
-                    self.messages += len(p.inbox)
-                
-                for p in self.processes:
-                    if p.check_leader():
+                    if p.is_leader:
                         return p.id, self.rounds, self.messages
                 
-                if not any(p.inbox for p in self.processes):
-                    break
-
-            if not any(p.active for p in self.processes):
-                break
 
 
 def main():
